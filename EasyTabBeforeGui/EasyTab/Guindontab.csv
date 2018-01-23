@@ -1,0 +1,14 @@
+Tab for Guindon,
+
+Team tab:,
+Position,Team,Round 1,Round 2,Wins,Team Speaks
+1,c,1,1,2,250.0,
+2,b,1,1,2,200.0,
+3,a,1,0,1,100.0,
+4,d,0,0,0,0.0,
+Speaker tab
+Position,Nov Position, Speaker, Team, Total Speaks, Average Speaks
+1,1,Ethan,d,0.0,0.0
+2,,Mark,c,0.0,0.0
+3,2,Ksenia,b,0.0,0.0
+4,,Adam,a,0.0,0.0

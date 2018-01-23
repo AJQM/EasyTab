@@ -1,0 +1,38 @@
+In order to be considered 1.0, program must:
+1) be able to run a break  done!
+2) check if amount of teams breaking is a power of 2 
+3) fix buggy spreadsheet import of teams  done!
+ Keep track of motions for a tournament
+4) export a tab to CSV 
+4.5 keep track of motions, export these too
+5) Not crash with incorrect input: catch exception
+6) privatise variables, concise (make helper methods) and document all code
+7) Testing and debugging
+8) Setup file
+Once program is functional, extra
+Functionality to be added: Tenths and hundredths decimals will be stable
+							Thousands decimals needn't be functional
+	Each of these should be functional when done
+	
+	1) Support for Dropping Teams/Swings 1.1
+		pseudo code:
+		has a team dropped?
+		if (yes){
+			teamsList.remove(team that dropped);
+		}
+		when round starts
+			if teamsList.size()%2!=0{
+				teamsList.add(new Team swing);
+			}
+	1.5) Support for nov status
+	--) Support for a nov break
+	--) Add html output
+	2) Autosaving after each round 1.1.1
+	3) ability to read a savefile 1.2
+	4) Option for no low-point rounds 1.3
+	5) ability to read in rooms from file, assign rooms 1.3.1
+	6) ability to read in judges from file, assign rankings to judges, and make panels based on rankings 1.4
+	7) GUI 2.0
+	8) Ability to export powerpoints for motions/breaks
+	9) Integration with google drive 3.0 (this or GUI whichever one comes first)
+	10) Support for BP 4.0 (far in the future)
