@@ -4,14 +4,34 @@ public class Tournament {
 	public int amtSpeaks;
 	public int amtTeams;
 	public int amtRounds;
+	private String name;
 	Scanner s = new Scanner(System.in);
-	public ArrayList<Speaker> totalSpeakers = new ArrayList<Speaker>(amtTeams * amtSpeaks);
-	public ArrayList<Team> teamsList = new ArrayList<Team>(amtTeams);
+	private ArrayList<Speaker> totalSpeakers = new ArrayList<Speaker>(amtTeams * amtSpeaks);
+	private ArrayList<Team> teamsList = new ArrayList<Team>(amtTeams);
+	private ArrayList<String> motions = new ArrayList<String>();
+	private ArrayList<String> roomsList = new ArrayList<String>();
 
-	public Tournament(int speakersPerTeam, int numberOfTeams, int numberOfRounds) {
+	public ArrayList<String> getRoomsList() {
+		return roomsList;
+	}
+
+	public void setRoomsList(ArrayList<String> roomsList) {
+		this.roomsList = roomsList;
+	}
+
+	public ArrayList<Team> getTeamsList() {
+		return teamsList;
+	}
+
+	public Tournament(int speakersPerTeam, int numberOfTeams, int numberOfRounds, String name) {
 		amtSpeaks = speakersPerTeam;
 		amtTeams = numberOfTeams;
 		amtRounds = numberOfRounds;
+		setName(name);
+	}
+
+	public void setRoundMotion(String motion) {
+		motions.add(motion);
 	}
 
 	public int getTeams() {
@@ -22,7 +42,7 @@ public class Tournament {
 		totalSpeakers.add(s);
 	}
 
-	public void setTeams(int amt, boolean manual) {
+	public void setTeams(int amt, boolean manual, String folder) {
 		if (manual) {
 			for (int i = 0; i < amt; i++) {
 				String name = "";
@@ -31,13 +51,16 @@ public class Tournament {
 				name = s.nextLine();
 				System.out.println("What is the code of team " + (i + 1) + "'s school?");
 				code = s.nextLine();
-				Team w = new Team(amtSpeaks, name, code);
-				w.setSpeakers();
-				teamsList.add(w);
+				Team w = new Team(amtSpeaks, name, code, amtRounds);
+				w.setSpeakers(w, amtRounds);
+				w.setNov();
+				getTeamsList().add(w);
+
 			}
 		} else {
 			Reader r = new Reader();
-			teamsList = r.readIntoLists(teamsList, amtSpeaks);
+			setTeamsList(r.readTeamsIntoLists(getTeamsList(), amtSpeaks, amtTeams, amtRounds, folder));
+
 		}
 	}
 
@@ -46,19 +69,26 @@ public class Tournament {
 			System.out.println("Round 1 can't be bracketed. This will be an unBracketed round.");
 			return nonBracketedRound(counter);
 		}
-		Team[][] brackets = new Team[teamsList.size() / 2][2];
+		Team[][] brackets = new Team[getTeamsList().size() / 2][2];
 		for (int i = 0, index = 0; i < brackets.length; i++, index += 2) {
-			brackets[i][0] = teamsList.get(index);
-			brackets[i][1] = teamsList.get(index + 1);
+			brackets[i][0] = getTeamsList().get(index);
+			brackets[i][1] = getTeamsList().get(index + 1);
 		}
-		UsefulMethods.printPairings(brackets);
+		UsefulMethods.printPairings(brackets, roomsList);
 		return brackets;
 
 	}
 
+	/**
+	 * @deprecated
+	 * @param counter
+	 *            the round number
+	 * @return a draw
+	 */
+	@SuppressWarnings("unchecked")
 	public Team[][] schoolProtection(int counter) {
 		ArrayList<Team> temp = new ArrayList<Team>();
-		temp = (ArrayList<Team>) teamsList.clone();
+		temp = (ArrayList<Team>) getTeamsList().clone();
 		long startTime = System.currentTimeMillis();
 		long elapsedTime = 0L;
 		boolean run = true;
@@ -99,8 +129,8 @@ public class Tournament {
 					if (!temp.get(0).getSchool().equals(temp.get(j).getSchool())) {
 						break;
 					} else if (j == temp.size() - 1) {
-						Collections.shuffle(teamsList);
-						temp = (ArrayList<Team>) teamsList.clone();
+						Collections.shuffle(getTeamsList());
+						temp = (ArrayList<Team>) getTeamsList().clone();
 					}
 				}
 			}
@@ -139,6 +169,7 @@ public class Tournament {
 					System.out.println("Exceeded maximum allowable attempte");
 					cont = false;
 					run = true;
+					@SuppressWarnings("resource")
 					Scanner runScan = new Scanner(System.in);
 					System.out.println("Type \"true\" to try again, type \"false\" to exit");
 					cont = runScan.nextBoolean();
@@ -155,29 +186,21 @@ public class Tournament {
 
 				if (cont) {
 					run = cont;
-					Collections.shuffle(teamsList);
-					temp = (ArrayList<Team>) teamsList.clone();
+					Collections.shuffle(getTeamsList());
+					temp = (ArrayList<Team>) getTeamsList().clone();
 					System.out.println("temp1 size" + temp.size());
 					System.out.println("temp size" + temp.size());
 				}
 
 			}
 		}
-		System.out.println("Room" + "\t" + "Prop" + "\t" + "Opp");
-		for (int k = 0; k < draw.length; k++) {
-			System.out.print(k + 1 + "\t");
-			for (int j = 0; j < 2; j++) {
-				System.out.print(draw[k][j].teamcode + "\t");
-
-			}
-			System.out.println();
-		}
+		UsefulMethods.printPairings(draw, roomsList);
 		return draw;
 	}
 
 	public Team[][] nonProtection(int counter) {
 		ArrayList<Team> temp = new ArrayList<Team>();
-		temp = teamsList;
+		temp = getTeamsList();
 		// should set temp to be a deep-copied version of arry
 		// problem with temp and teamsList pointing to same object
 		// when temp is altered, so is teamsList
@@ -195,111 +218,126 @@ public class Tournament {
 				draw[i / 2][1] = temp.get(i);
 			}
 		}
-		System.out.println("Room" + "\t" + "Prop" + "\t" + "Opp");
-		for (int i = 0; i < draw.length; i++) {
-			System.out.print(i + 1 + "\t");
-			for (int j = 0; j < 2; j++) {
-				System.out.print(draw[i][j].teamcode + "\t");
-
-			}
-			System.out.println();
-		}
+		UsefulMethods.printPairings(draw, roomsList);
 		return draw;
 	}
 
 	public Team[][] nonBracketedRound(int counter) {
-		System.out.println("Will round " + counter + " have school protection? (y/n)");
-		if (UsefulMethods.yn())
-			return schoolProtection(counter);
-		else
-			return nonProtection(counter);
+		// System.out.println("Will round " + counter + " have school protection?
+		// (y/n)");
+		// if (UsefulMethods.yn())
+		// return schoolProtection(counter);
+		// else
+		return nonProtection(counter);
 	}
 
-	public void results(int counter, Team[][] pairings) {
-		System.out.println("Time to enter results for round " + counter);
-		for (int i = 0; i < pairings.length; i++) {
-			int judgeNum = 0;
-			// System.out.println("Are results available for room " + (i + 1) +
-			// ": " + pairings[i][0].teamcode + " vs "
-			// + pairings[i][1].teamcode + "?");
-			// if (UsefulMethods.yn()) {
-			System.out.println(
-					"room " + (i + 1) + ": " + pairings[i][0].teamcode + " vs " + pairings[i][1].teamcode + "?");
-			System.out.println(
-					"How many judges were in this room? (If judges did not have seperate ballots and confered, enter 1)");
-			while (judgeNum == 0) {
-				s.hasNextInt();
-				if (s.hasNextInt()) {
-					judgeNum = s.nextInt();
-				} else {
-					System.out.println("Please enter a number");
-				}
-				s.nextLine();
-
-			}
-
-			for (int j = 0; j < judgeNum; j++) {
-				System.out.println("Did judge " + (j + 1) + " give team " + pairings[i][0].teamcode + " the win?");
-
-				if (UsefulMethods.yn()) {
-					pairings[i][0].ballots++;
-				} else {
-					pairings[i][1].ballots++;
-				}
-				System.out.println("For team " + pairings[i][0].teamcode + " what speaker score was given to ");
-				for (int q = 0; q < amtSpeaks; q++) {
-					System.out.println(pairings[i][0].TeamSpeakersList.get(q).name + "?");
-					int temp = (int) pairings[i][0].TeamSpeakersList.get(q).roundSpeaks;
-					// rewrite
-					while ((int) pairings[i][0].TeamSpeakersList.get(q).roundSpeaks == temp) {
-						if (s.hasNextDouble()) {
-							pairings[i][0].TeamSpeakersList.get(q).roundSpeaks += s.nextDouble();
-							break;
+	public void results(int counter, Team[][] pairings, boolean conferral, String resultsFile, boolean manual) {
+		if (manual) {
+			System.out.println("Time to enter results for round " + counter);
+			for (int i = 0; i < pairings.length; i++) {
+				int judgeNum = 0;
+				// System.out.println("Are results available for room " + (i + 1) +
+				// ": " + pairings[i][0].teamcode + " vs "
+				// + pairings[i][1].teamcode + "?");
+				// if (UsefulMethods.yn()) {
+				System.out.println("room " + (i + 1) + ": " + pairings[i][0].getTeamcode() + " vs "
+						+ pairings[i][1].getTeamcode() + "?");
+				if (!conferral) {
+					System.out.println(
+							"How many judges were in this room? (If judges did not have seperate ballots and confered, enter 1)");
+					while (judgeNum == 0) {
+						s.hasNextInt();
+						if (s.hasNextInt()) {
+							judgeNum = s.nextInt();
 						} else {
 							System.out.println("Please enter a number");
 						}
 						s.nextLine();
 
 					}
-				}
-				System.out.println("For team " + pairings[i][1].teamcode + " what speaker score was given to ");
-				for (int q = 0; q < amtSpeaks; q++) {
-					System.out.println(pairings[i][1].TeamSpeakersList.get(q).name + "?");
-					int temp = (int) pairings[i][1].TeamSpeakersList.get(q).roundSpeaks;
+				} else
+					judgeNum = 1;
 
-					while ((int) pairings[i][1].TeamSpeakersList.get(q).roundSpeaks == temp) {
+				for (int j = 0; j < judgeNum; j++) {
+					System.out.println(
+							"Did judge " + (j + 1) + " give team " + pairings[i][0].getTeamcode() + " the win?");
+
+					if (UsefulMethods.yn()) {
+						pairings[i][0].setBallots(pairings[i][0].getBallots() + 1);
+					} else {
+						pairings[i][1].setBallots(pairings[i][1].getBallots() + 1);
+					}
+					System.out
+							.println("For team " + pairings[i][0].getTeamcode() + " what speaker score was given to ");
+					for (int q = 0; q < amtSpeaks; q++) {
+						System.out.println(pairings[i][0].TeamSpeakersList.get(q).getName() + "?");
+						int temp = (int) pairings[i][0].TeamSpeakersList.get(q).roundSpeaks;
 						// rewrite
-						// @rewrite
-						if (s.hasNextDouble()) {
-							pairings[i][1].TeamSpeakersList.get(q).roundSpeaks += s.nextDouble();
-							break;
-						} else {
-							System.out.println("Please enter a number");
-						}
-						s.nextLine();
+						while ((int) pairings[i][0].TeamSpeakersList.get(q).roundSpeaks == temp) {
+							if (s.hasNextDouble()) {
+								pairings[i][0].TeamSpeakersList.get(q).roundSpeaks += s.nextDouble();
+								break;
+							} else {
+								System.out.println("Please enter a number");
+							}
+							s.nextLine();
 
+						}
+					}
+					System.out
+							.println("For team " + pairings[i][1].getTeamcode() + " what speaker score was given to ");
+					for (int q = 0; q < amtSpeaks; q++) {
+						System.out.println(pairings[i][1].TeamSpeakersList.get(q).getName() + "?");
+						int temp = (int) pairings[i][1].TeamSpeakersList.get(q).roundSpeaks;
+
+						while ((int) pairings[i][1].TeamSpeakersList.get(q).roundSpeaks == temp) {
+							// rewrite
+							// @rewrite
+							if (s.hasNextDouble()) {
+								pairings[i][1].TeamSpeakersList.get(q).roundSpeaks += s.nextDouble();
+								break;
+							} else {
+								System.out.println("Please enter a number");
+							}
+							s.nextLine();
+
+						}
 					}
 				}
-			}
-			for (int j = 0; j < amtSpeaks; j++) {
-				pairings[i][0].TeamSpeakersList.get(j).speaks += pairings[i][0].TeamSpeakersList.get(j).roundSpeaks
-						/ judgeNum;
-				pairings[i][0].teamSpeaks += pairings[i][0].TeamSpeakersList.get(j).roundSpeaks / judgeNum;
-				pairings[i][1].TeamSpeakersList.get(j).speaks += pairings[i][1].TeamSpeakersList.get(j).roundSpeaks
-						/ judgeNum;
-				pairings[i][1].teamSpeaks += pairings[i][1].TeamSpeakersList.get(j).roundSpeaks / judgeNum;
-			}
-			if (pairings[i][0].ballots > pairings[i][1].ballots) {
-				pairings[i][0].setWins(pairings[i][0].getWins() + 1);
-				pairings[i][1].losses++;
+				for (int j = 0; j < amtSpeaks; j++) {
+					double speaks;
+					speaks = pairings[i][0].TeamSpeakersList.get(j).roundSpeaks / judgeNum;
+					pairings[i][0].TeamSpeakersList.get(j).speaks += speaks;
+					pairings[i][0].TeamSpeakersList.get(j).addSpeaks(speaks, counter);
+					pairings[i][0].setTeamSpeaks(pairings[i][0].getTeamSpeaks() + speaks);
+					pairings[i][1].TeamSpeakersList.get(j).speaks += pairings[i][1].TeamSpeakersList.get(j).roundSpeaks
+							/ judgeNum;
+					pairings[i][1].TeamSpeakersList.get(j)
+							.addSpeaks(pairings[i][1].TeamSpeakersList.get(j).roundSpeaks / judgeNum, counter);
+					pairings[i][1].setTeamSpeaks(pairings[i][1].getTeamSpeaks()
+							+ pairings[i][1].TeamSpeakersList.get(j).roundSpeaks / judgeNum);
+				}
+				if (pairings[i][0].getBallots() > pairings[i][1].getBallots()) {
+					pairings[i][0].setWins(pairings[i][0].getWins() + 1);
+					pairings[i][0].setRoundResults(1, counter);
+					pairings[i][1].losses++;
+					pairings[i][1].setRoundResults(0, counter);
 
-			} else {
-				pairings[i][1].setWins(pairings[i][1].getWins() + 1);
-				pairings[i][0].losses++;
-			}
-			pairings[i][0].ballots = 0;
-			pairings[i][1].ballots = 0;
+				} else {
+					pairings[i][1].setWins(pairings[i][1].getWins() + 1);
+					pairings[i][1].setRoundResults(1, counter);
 
+					pairings[i][0].losses++;
+					pairings[i][0].setRoundResults(0, counter);
+
+				}
+				pairings[i][0].setBallots(0);
+				pairings[i][1].setBallots(0);
+
+			}
+		} else {
+			Reader r = new Reader();
+			r.readResults(counter, pairings, conferral, resultsFile);
 		}
 
 	}
@@ -316,35 +354,35 @@ public class Tournament {
 
 	// loads speakers from individual teams into total speakers list
 	public ArrayList<Speaker> loadSpeakers() {
-		for (int i = 0; i < teamsList.size(); i++) {
+		for (int i = 0; i < getTeamsList().size(); i++) {
 			for (int j = 0; j < amtSpeaks; j++) {
-				totalSpeakers.add(teamsList.get(i).TeamSpeakersList.get(j));
+				getTotalSpeakers().add(getTeamsList().get(i).TeamSpeakersList.get(j));
 			}
 		}
-		return totalSpeakers;
+		return getTotalSpeakers();
 	}
 
 	public void setSpeakerRankings(int counter) {
-		for (int i = 0; i < totalSpeakers.size() - 1; i++) {
+		for (int i = 0; i < getTotalSpeakers().size() - 1; i++) {
 			int index = i;
-			for (int j = i + 1; j < totalSpeakers.size(); j++) {
-				if (totalSpeakers.get(j).speaks < totalSpeakers.get(index).speaks) {
+			for (int j = i + 1; j < getTotalSpeakers().size(); j++) {
+				if (getTotalSpeakers().get(j).speaks < getTotalSpeakers().get(index).speaks) {
 					index = j;
 				}
 
 			}
-			Speaker smallerNumber = totalSpeakers.get(index);
-			totalSpeakers.set(index, totalSpeakers.get(i));
-			totalSpeakers.set(i, smallerNumber);
+			Speaker smallerNumber = getTotalSpeakers().get(index);
+			getTotalSpeakers().set(index, getTotalSpeakers().get(i));
+			getTotalSpeakers().set(i, smallerNumber);
 		}
 
 		// print rankings
 		System.out.println("Speaker\t\t\tRank\t\tSpeaks\t\tAverage Speaks");
-		for (int i = totalSpeakers.size() - 1; i >= 0; i--) {
-			System.out.println(totalSpeakers.get(i).name + "\t\t\t" + (totalSpeakers.size() - i) + "\t\t "
-					+ Math.floor(totalSpeakers.get(i).speaks * 100) / 100 + "\t\t"
-					+ Math.floor(totalSpeakers.get(i).speaks / counter * 100) / 100);
-			totalSpeakers.get(i).roundSpeaks = 0;
+		for (int i = getTotalSpeakers().size() - 1; i >= 0; i--) {
+			System.out.println(getTotalSpeakers().get(i).getName() + "\t\t\t" + (getTotalSpeakers().size() - i)
+					+ "\t\t " + Math.floor(getTotalSpeakers().get(i).speaks * 100) / 100 + "\t\t"
+					+ Math.floor(getTotalSpeakers().get(i).speaks / counter * 100) / 100);
+			getTotalSpeakers().get(i).roundSpeaks = 0;
 		}
 	}
 
@@ -355,34 +393,32 @@ public class Tournament {
 	 * @param counter
 	 *            the round number
 	 */
-	;
-
 	public void setRankings(int counter) {
-		for (int i = 0; i < teamsList.size() - 1; i++) {
+		for (int i = 0; i < getTeamsList().size() - 1; i++) {
 			int min = i;
-			for (int j = i + 1; j < teamsList.size(); j++)
-				if (teamsList.get(j).getWins() < teamsList.get(min).getWins())
+			for (int j = i + 1; j < getTeamsList().size(); j++)
+				if (getTeamsList().get(j).getWins() < getTeamsList().get(min).getWins())
 					min = j;
-			Team temp = teamsList.get(i);
-			teamsList.set(i, teamsList.get(min));
-			teamsList.set(min, temp);
+			Team temp = getTeamsList().get(i);
+			getTeamsList().set(i, getTeamsList().get(min));
+			getTeamsList().set(min, temp);
 		}
 		boolean sorted = false;
 		while (!sorted) {
-			for (int i = 0; i < teamsList.size() - 1; i++) {
-				if (teamsList.get(i).getWins() == teamsList.get(i + 1).getWins()) {
-					if (teamsList.get(i).teamSpeaks > teamsList.get(i + 1).teamSpeaks) {
-						Team temp = teamsList.get(i);
-						teamsList.set(i, teamsList.get(i + 1));
-						teamsList.set(i + 1, temp);
+			for (int i = 0; i < getTeamsList().size() - 1; i++) {
+				if (getTeamsList().get(i).getWins() == getTeamsList().get(i + 1).getWins()) {
+					if (getTeamsList().get(i).getTeamSpeaks() > getTeamsList().get(i + 1).getTeamSpeaks()) {
+						Team temp = getTeamsList().get(i);
+						getTeamsList().set(i, getTeamsList().get(i + 1));
+						getTeamsList().set(i + 1, temp);
 					}
 				}
 
 			}
 			sorted = true;
-			for (int i = 0; i < teamsList.size() - 1; i++) {
-				if (teamsList.get(i).getWins() == teamsList.get(i + 1).getWins()) {
-					if (teamsList.get(i).teamSpeaks > teamsList.get(i + 1).teamSpeaks) {
+			for (int i = 0; i < getTeamsList().size() - 1; i++) {
+				if (getTeamsList().get(i).getWins() == getTeamsList().get(i + 1).getWins()) {
+					if (getTeamsList().get(i).getTeamSpeaks() > getTeamsList().get(i + 1).getTeamSpeaks()) {
 						sorted = false;
 					}
 				}
@@ -390,18 +426,69 @@ public class Tournament {
 		}
 		System.out.println("Position\tTeam\tWins\tTeam Speaks");
 
-		for (int i = teamsList.size() - 1; i >= 0; i--) {
-			System.out.print(teamsList.size() - i);
+		for (int i = getTeamsList().size() - 1; i >= 0; i--) {
+			System.out.print(getTeamsList().size() - i);
 			System.out.print("\t\t");
-			System.out.print(teamsList.get(i));
+			System.out.print(getTeamsList().get(i));
 			System.out.print("\t");
-			System.out.print(teamsList.get(i).getWins());
+			System.out.print(getTeamsList().get(i).getWins());
 			System.out.print("\t");
-			System.out.print(teamsList.get(i).teamSpeaks);
+			System.out.print(getTeamsList().get(i).getTeamSpeaks());
 			System.out.println();
 
 		}
 		setSpeakerRankings(counter);
+	}
+
+	public ArrayList<String> getMotions() {
+		return motions;
+	}
+
+	public void setMotions(ArrayList<String> motions) {
+		this.motions = motions;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setTeamsList(ArrayList<Team> teamsList) {
+		this.teamsList = teamsList;
+	}
+
+	public ArrayList<Speaker> getTotalSpeakers() {
+		return totalSpeakers;
+	}
+
+	public void setTotalSpeakers(ArrayList<Speaker> totalSpeakers) {
+		this.totalSpeakers = totalSpeakers;
+	}
+
+	public void setRooms(boolean manual, Scanner s, String folder) {
+
+		if (manual) {
+			System.out.println("How many rooms to enter?");
+			int amt = -1;
+			do {
+				try {
+					amt = s.nextInt();
+				} catch (NumberFormatException e) {
+				}
+
+			} while (amt <= 0);
+			for (int i = 0; i < amt; i++) {
+				System.out.println("What is the room number?");
+				roomsList.add(s.nextLine());
+			}
+		} else {
+			Reader r = new Reader();
+			setRoomsList(r.readRoomsIntoLists(folder));
+
+		}
 	}
 
 }

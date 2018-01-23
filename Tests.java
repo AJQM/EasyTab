@@ -5,7 +5,7 @@ public class Tests {
 	public static void main(String[] args) {
 		ArrayList<Team> teamsList = new ArrayList<Team>();
 		Reader r = new Reader();
-		teamsList = r.readIntoLists(teamsList, 2);
+		teamsList = r.readTeamsIntoLists(teamsList, 2, 2,2, "hi");
 		
 		int winCounter = 0;
 		Team[][] brackets = new Team[teamsList.size() / 2][2];
@@ -35,7 +35,7 @@ public class Tests {
 		for (int i = 0; i < brackets.length; i++) {
 			System.out.print(i + 1 + "\t");
 			for (int j = 0; j < 2; j++) {
-				System.out.print(brackets[i][j].teamcode + "\t");
+				System.out.print(brackets[i][j].getTeamcode() + "\t");
 
 			}
 			System.out.println();
